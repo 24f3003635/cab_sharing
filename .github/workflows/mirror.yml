@@ -1,0 +1,27 @@
+name: Mirror to Second Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to mirror repo
+        env:
+          TOKEN: ${{ secrets.MIRROR_TOKEN }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git remote add mirror https://x-access-token:${TOKEN}@github.com/codeand-curiosity/https://github.com/24f3003635/cab_sharing.git
+
+          git push --mirror mirror
