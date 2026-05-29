@@ -52,6 +52,8 @@
                 drop: "MP Nagar Zone 2",
                 seats: 1,
                 share: 90,
+                gender: "male",
+                rating: 4.4,
                 status: "pending"
             },
             {
@@ -61,6 +63,8 @@
                 drop: "DB Mall",
                 seats: 2,
                 share: 140,
+                gender: "female",
+                rating: 4.8,
                 status: "pending"
             },
             {
@@ -70,16 +74,57 @@
                 drop: "Habibganj",
                 seats: 1,
                 share: 80,
+                gender: "female",
+                rating: 4.6,
+                status: "pending"
+            },
+            {
+                id: 4,
+                name: "Rohit Sahu",
+                pickup: "BHEL Gate",
+                drop: "DB Mall",
+                seats: 1,
+                share: 75,
+                gender: "male",
+                rating: 2.8,
+                status: "pending"
+            },
+            {
+                id: 5,
+                name: "Manav Jain",
+                pickup: "10 No. Market",
+                drop: "New Market",
+                seats: 1,
+                share: 65,
+                gender: "male",
+                rating: 2.6,
                 status: "pending"
             }
         ];
 
         function HostRequestApp() {
             const [requests, setRequests] = React.useState(initialRequests);
+            const [pinkRiderOnly, setPinkRiderOnly] = React.useState(false);
+            const [rideInitialised, setRideInitialised] = React.useState(false);
+            const [rideCompleted, setRideCompleted] = React.useState(false);
+            const [hostRating, setHostRating] = React.useState(0);
+            const [userRating, setUserRating] = React.useState(0);
+            const visibleRequests = pinkRiderOnly
+                ? requests.filter((request) => request.gender === "female" || (request.gender === "male" && request.rating > 3))
+                : requests;
             const accepted = requests.filter((request) => request.status === "accepted");
-            const pending = requests.filter((request) => request.status === "pending");
+            const pending = visibleRequests.filter((request) => request.status === "pending");
             const rejected = requests.filter((request) => request.status === "rejected");
             const collection = accepted.reduce((total, request) => total + request.share, 0);
+            const activeRoute = {
+                pickup: "Boat Club",
+                drop: "MP Nagar Zone 2",
+                stops: accepted.map((request) => request.pickup),
+                distanceLeft: rideCompleted ? "0 km" : "5.8 km",
+                nextStop: accepted[0]?.pickup || "First rider pickup",
+                eta: rideCompleted ? "Completed" : "18 min",
+                progress: rideCompleted ? "100%" : "62%"
+            };
 
             function updateRequest(id, status) {
                 setRequests((current) =>
@@ -95,6 +140,32 @@
                     .map((part) => part[0])
                     .join("")
                     .slice(0, 2);
+            }
+
+            function starText(rating) {
+                return `${rating.toFixed(1)} stars`;
+            }
+
+            function RatingStars({ label, value, onChange }) {
+                return (
+                    <div className="rounded-xl border border-cabLine bg-[#101722]/90 p-4">
+                        <p className="text-sm font-bold text-slate-300">{label}</p>
+                        <div className="mt-3 flex gap-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => onChange(star)}
+                                    className={`text-3xl leading-none transition ${star <= value ? "text-amber-300" : "text-slate-600 hover:text-amber-200"}`}
+                                    aria-label={`${label} ${star} star${star > 1 ? "s" : ""}`}
+                                >
+                                    ★
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-2 text-sm text-slate-400">{value > 0 ? `${value}/5 selected` : "Tap a star to rate"}</p>
+                    </div>
+                );
             }
 
             return (
@@ -122,18 +193,122 @@
                         </div>
                     </section>
 
+                    {rideInitialised && (
+                        <section className="mx-auto mt-5 max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(56,189,248,0.18),rgba(16,23,34,0.94))] p-5 shadow-2xl shadow-black/30 backdrop-blur-xl">
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-bold text-cabAccent">{rideCompleted ? "Ride completed" : "Ride live"}</p>
+                                    <h2 className="mt-1 text-3xl font-black">Current route </h2>
+                                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                                        Track the host route, accepted users, next stop, remaining distance, and ride completion from one place.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={rideCompleted}
+                                    onClick={() => setRideCompleted(true)}
+                                    className="min-h-12 rounded-xl bg-emerald-300 px-5 font-black text-slate-950 shadow-xl shadow-emerald-400/20 transition enabled:hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {rideCompleted ? "Ride completed" : "Complete ride"}
+                                </button>
+                            </div>
+
+                            <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                                <div className="rounded-2xl border border-white/10 bg-[#101722]/90 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm text-slate-400">Route</p>
+                                            <strong className="text-xl">{activeRoute.pickup} to {activeRoute.drop}</strong>
+                                        </div>
+                                        <span className="rounded-full bg-sky-300 px-3 py-1 text-sm font-black text-slate-950">{activeRoute.eta}</span>
+                                    </div>
+                                    <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-sky-300" style={{ width: activeRoute.progress }}></div>
+                                    </div>
+                                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                        <div className="rounded-xl bg-white/10 p-4">
+                                            <p className="text-sm text-slate-400">Distance left</p>
+                                            <strong className="mt-1 block text-2xl">{activeRoute.distanceLeft}</strong>
+                                        </div>
+                                        <div className="rounded-xl bg-white/10 p-4">
+                                            <p className="text-sm text-slate-400">Next stop</p>
+                                            <strong className="mt-1 block text-lg">{activeRoute.nextStop}</strong>
+                                        </div>
+                                        <div className="rounded-xl bg-white/10 p-4">
+                                            <p className="text-sm text-slate-400">Riders onboard</p>
+                                            <strong className="mt-1 block text-2xl">{accepted.length}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-white/10 bg-[#101722]/90 p-5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-lg font-black">Users on this ride</h3>
+                                        <span className="text-sm text-slate-400">{accepted.length} accepted</span>
+                                    </div>
+                                    <div className="mt-4 grid gap-3">
+                                        {accepted.length === 0 ? (
+                                            <p className="rounded-xl border border-cabLine p-4 text-sm text-slate-400">Accept at least one user to start seeing riders here.</p>
+                                        ) : (
+                                            accepted.map((request) => (
+                                                <div key={request.id} className="flex items-center justify-between gap-3 rounded-xl border border-cabLine p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sky-300 font-black text-slate-950">{initials(request.name)}</div>
+                                                        <div>
+                                                            <strong>{request.name}</strong>
+                                                            <p className="text-sm text-slate-400">{request.pickup} to {request.drop}</p>
+                                                            <p className="text-xs font-bold text-amber-200">{starText(request.rating)} · {request.gender}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${rideCompleted ? "bg-sky-400/15 text-sky-200" : "bg-emerald-400/15 text-emerald-200"}`}>
+                                                        {rideCompleted ? "Complete" : "On route"}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {rideCompleted && (
+                                <div className="mt-5 rounded-2xl border border-amber-200/20 bg-amber-300/10 p-5">
+                                    <div>
+                                        <p className="text-sm font-bold text-amber-200">Ride feedback</p>
+                                        <h3 className="mt-1 text-2xl font-black">Rate your ride experience</h3>
+                                    </div>
+                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                        <RatingStars label="Rate host" value={hostRating} onChange={setHostRating} />
+                                        <RatingStars label="Rate user" value={userRating} onChange={setUserRating} />
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+                    )}
+
                     <section className="mx-auto mt-5 grid max-w-6xl gap-5 lg:grid-cols-[1.15fr_0.85fr]">
                         <section className="rounded-2xl border border-white/10 bg-cabPanel p-5 shadow-2xl shadow-black/30 backdrop-blur-xl">
                             <div className="flex flex-wrap items-end justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-bold text-cabAccent">New user requests</p>
                                     <h2 className="mt-1 text-2xl font-black">Accept or reject riders</h2>
+                                    <p className="mt-2 text-sm text-slate-400">Pink rider shows female requests and male riders rated above 3 stars.</p>
                                 </div>
-                                <span className="rounded-full border border-cabLine px-3 py-1 text-sm text-slate-300">{pending.length} pending</span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPinkRiderOnly((current) => !current)}
+                                        className={`rounded-full border px-4 py-2 text-sm font-black transition ${pinkRiderOnly ? "border-pink-300 bg-pink-300 text-slate-950" : "border-cabLine bg-white/10 text-slate-100 hover:bg-white/15"}`}
+                                    >
+                                        Pink rider
+                                    </button>
+                                    <span className="rounded-full border border-cabLine px-3 py-1 text-sm text-slate-300">{pending.length} pending</span>
+                                </div>
                             </div>
 
                             <div className="mt-5 grid gap-3">
-                                {requests.map((request) => (
+                                {visibleRequests.length === 0 ? (
+                                    <p className="rounded-xl border border-cabLine bg-[#101722]/90 p-4 text-sm text-slate-400">No requests match the Pink rider filter.</p>
+                                ) : visibleRequests.map((request) => (
                                     <article key={request.id} className="rounded-xl border border-cabLine bg-[#101722]/90 p-4 transition hover:-translate-y-0.5 hover:border-sky-300/50">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="flex gap-3">
@@ -143,6 +318,7 @@
                                                 <div>
                                                     <h3 className="text-lg font-black">{request.name}</h3>
                                                     <p className="mt-1 text-sm text-slate-400">{request.pickup} to {request.drop}</p>
+                                                    <p className="mt-1 text-xs font-bold text-amber-200">{starText(request.rating)} · {request.gender}</p>
                                                     <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
                                                         <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
                                                         <span>{request.pickup}</span>
@@ -220,10 +396,11 @@
 
                             <button
                                 type="button"
-                                disabled={accepted.length === 0}
+                                disabled={accepted.length === 0 || rideInitialised}
+                                onClick={() => setRideInitialised(true)}
                                 className="min-h-14 rounded-xl bg-gradient-to-br from-sky-300 to-sky-500 px-5 font-black text-slate-950 shadow-xl shadow-sky-500/20 transition enabled:hover:from-sky-200 disabled:cursor-not-allowed disabled:opacity-45"
                             >
-                                Initialise ride
+                                {rideInitialised ? "Ride initialised" : "Initialise ride"}
                             </button>
                         </aside>
                     </section>
