@@ -6,10 +6,12 @@ function initWhereToGoFlow() {
     const routeFormTitle = document.querySelector("#routeFormTitle");
     const routeFormHint = document.querySelector("#routeFormHint");
     const routeSubmit = document.querySelector("#routeSubmit");
+    const scheduleRide = document.querySelector("#scheduleRide");
     const runningRides = document.querySelector("#runningRides");
     const stopsList = document.querySelector("#stopsList");
     const addStop = document.querySelector("#addStop");
     const mapPlaceholder = document.querySelector("#mapPlaceholder");
+    const scheduledRideList = document.querySelector("#scheduledRideList");
     let stopCount = 0;
     let selectedRideMode = "";
     let hostDashboard = null;
@@ -140,6 +142,34 @@ function initWhereToGoFlow() {
     function hideDashboards() {
         hostDashboard?.classList.remove("active");
         rideDashboard?.classList.remove("active");
+    }
+
+    function renderScheduledRide() {
+        if (!scheduledRideList) {
+            return;
+        }
+
+        const route = routeData();
+        const stopText = route.stops.length > 0
+            ? `${route.stops.length} stop${route.stops.length === 1 ? "" : "s"} added`
+            : "Direct ride";
+
+        scheduledRideList.innerHTML = `
+            <a class="host-upcoming-card" href="hostRideRequests.html">
+                <div class="ride-main">
+                    <div>
+                        <strong>Your scheduled route</strong>
+                        <span>${route.pickup} to ${route.drop}</span>
+                    </div>
+                    <div class="ride-price">Open</div>
+                </div>
+                <div class="ride-meta">
+                    <span>See scheduled ride requests</span>
+                    <span>Accept or reject riders</span>
+                    <span>${stopText}</span>
+                </div>
+            </a>
+        `;
     }
 
     function rideOptions(route) {
@@ -390,12 +420,14 @@ function initWhereToGoFlow() {
                 routeFormTitle.textContent = "Host your ride";
                 routeFormHint.textContent = "Add pickup, optional stops, and drop location so riders can request your route.";
                 routeSubmit.textContent = "Publish route";
+                scheduleRide?.classList.add("active");
                 return;
             }
 
             routeFormTitle.textContent = "Find running rides";
             routeFormHint.textContent = "Add pickup and drop location to match with nearby active rides.";
             routeSubmit.textContent = "Search rides";
+            scheduleRide?.classList.remove("active");
         });
     });
 
@@ -459,6 +491,18 @@ function initWhereToGoFlow() {
             renderRunningRideOptions();
         }
     });
+
+    scheduleRide?.addEventListener("click", () => {
+        if (selectedRideMode !== "host") {
+            return;
+        }
+
+        runningRides.classList.remove("active");
+        routeForm.classList.remove("active");
+        hideDashboards();
+        renderScheduledRide();
+    });
+
 }
 
 document.addEventListener("DOMContentLoaded", initWhereToGoFlow);
